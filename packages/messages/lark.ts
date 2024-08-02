@@ -4,7 +4,7 @@
  * Lark custom robot message
  * 
  * ```ts
- * await send("webHookUrl", "secret", { msg_type: "text", text: { content: "Hello~" } })
+ * await send("webHookUrl", "secret", { msg_type: "text", content: { text: "Hello~" } })
  * ```
  * 
  * @module
@@ -27,7 +27,7 @@ export function send(webHookUrl: string, secret: string, msg: FeishuMessage): Pr
 
 type TextMessage = {
     msg_type: "text";
-    text: { content: string };
+    content: { text: string };
 };
 
 type PostMessage = {
@@ -52,7 +52,7 @@ type PostMessageParagraph = PostMessageParagraphPart[]
 
 type ImageMessage = {
     msg_type: "image";
-    image: { image_key: string };
+    content: { image_key: string };
 }
 
 type FeishuMessage = | TextMessage | PostMessage | ImageMessage;

@@ -7,5 +7,5 @@ Send Dingtalk and Lark custom robot message
 ```ts
 import { send } from "@cvnc/messages/lark";
 
-await send("webHookUrl", "secret", { msg_type: "text", text: { content: "Hello~" } })
+await send("webHookUrl", "secret", { msg_type: "text", content: { text: "Hello~" } })
 ```
