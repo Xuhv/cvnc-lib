@@ -1,3 +1,6 @@
 {
-    "workspace": ["./packages/messages"]
+    "workspace": [
+        "./packages/messages",
+        "./packages/klona"
+    ]
 }
