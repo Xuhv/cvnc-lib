@@ -1,5 +1,8 @@
 {
   "name": "@cvnc/messages",
-  "version": "0.1.0",
-  "exports": "./mod.ts"
+  "version": "0.2.0",
+  "exports": {
+    "./lark": "./lark.ts",
+    "./dingtalk": "./dingtalk.ts"
+  }
 }

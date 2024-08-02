@@ -3,47 +3,34 @@
  * 
  * Dingtalk custom robot message
  * 
+ * ```ts
+ * await send("webHookUrl", "secret", { msgtype: "text", text: { content: "Hello~" } })
+ * ```
+ * 
  * @module
  */
 
 import crypto from "node:crypto";
 
+function signature(secret: string, content: string) {
+    const str = crypto.createHmac("sha256", secret).update(content)
+        .digest()
+        .toString("base64");
+    return encodeURIComponent(str);
+}
 
 /**
- * 只支持签名加密
- * 
- * Only support signature encryption
- * 
  * @see https://open.dingtalk.com/document/orgapp/customize-robot-security-settings
  */
-export class Bot {
-    private base_url: string;
-    private access_token: string;
-    private secret: string;
-
-    constructor(
-        access_token: string,
-        secret: string,
-        base_url = "https://oapi.dingtalk.com/robot/send",
-    ) {
-        this.access_token = access_token;
-        this.secret = secret;
-        this.base_url = base_url;
-    }
-
-    private calculateUrl() {
-        const timestamp = new Date().getTime();
-        const sign = calculateSign(this.secret, `${timestamp}\n${this.secret}`);
-        return `${this.base_url}?access_token=${this.access_token}&timestamp=${timestamp}&sign=${sign}`;
-    }
-
-    send(msg: DingtalkMessage): Promise<Response> {
-        return fetch(this.calculateUrl(), {
-            method: "POST",
-            headers: { "Content-Type": "application/json;charset=utf-8" },
-            body: JSON.stringify(msg),
-        });
-    }
+export function send(webHookUrl: string, secret: string, msg: DingtalkMessage): Promise<Response> {
+    const timestamp = new Date().getTime();
+    const sign = signature(secret, `${timestamp}\n${secret}`);
+    const url = `${webHookUrl}&timestamp=${timestamp}&sign=${sign}`;
+    return fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json;charset=utf-8" },
+        body: JSON.stringify(msg),
+    });
 }
 
 type AtInfo = { atMobiles: string[]; atUserIds: string[]; isAtAll: boolean };
@@ -86,10 +73,3 @@ type DingtalkMessage =
     | MarkdownMessage
     | ActionCardMessage
     | FeedCardMessage;
-
-function calculateSign(secret: string, content: string) {
-    const str = crypto.createHmac("sha256", secret).update(content)
-        .digest()
-        .toString("base64");
-    return encodeURIComponent(str);
-}
