@@ -1,0 +1,26 @@
+{
+  "version": "3",
+  "packages": {
+    "specifiers": {
+      "npm:classnames@^2.5.1": "npm:classnames@2.5.1",
+      "npm:nanoid@^5.0.7": "npm:nanoid@5.0.7",
+      "npm:preact@^10.22.1": "npm:preact@10.23.2",
+      "npm:preact@^10.23.2": "npm:preact@10.23.2"
+    },
+    "npm": {
+      "classnames@2.5.1": {
+        "integrity": "sha512-saHYOzhIQs6wy2sVxTM6bUDsQO4F50V9RQ22qBpEdCW+I+/Wmke2HOl6lS6dTpdxVhb88/I6+Hs+438c3lfUow==",
+        "dependencies": {}
+      },
+      "nanoid@5.0.7": {
+        "integrity": "sha512-oLxFY2gd2IqnjcYyOXD8XGCftpGtZP2AbHbOkthDkvRywH5ayNtPVy9YlOPcHckXzbLTCHpkb7FB+yuxKV13pQ==",
+        "dependencies": {}
+      },
+      "preact@10.23.2": {
+        "integrity": "sha512-kKYfePf9rzKnxOAKDpsWhg/ysrHPqT+yQ7UW4JjdnqjFIeNUnNcEJvhuA8fDenxAGWzUqtd51DfVg7xp/8T9NA==",
+        "dependencies": {}
+      }
+    }
+  },
+  "remote": {}
+}
