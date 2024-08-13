@@ -1,6 +1,6 @@
 {
   "name": "@cvnc/klona",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "exports": {
     "./_download": "./_download.ts",
     "./deepcopy": "./deepcopy.ts",

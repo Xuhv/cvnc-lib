@@ -9,137 +9,219 @@
 // deno-lint-ignore ban-ts-comment
 // @ts-nocheck
 
-import { jsx as h, jsxs as ee } from "react/jsx-runtime";
-import P from "classnames";
-import fe, { useEffect as S, useRef as R, useCallback as M, useContext as se, useMemo as g, memo as ue, useState as T, createElement as he, type FunctionComponent, type ReactNode } from "react";
-import { nanoid as ye } from "nanoid";
-function ge(t, n, c) {
-  S(() => {
-    let o;
-    t < 0 ? o = "left" : t + n > window.innerWidth ? o = "right" : o = null, c(o);
-  }, [t, n]);
+import { jsx, jsxs } from "react/jsx-runtime";
+import classNames from "classnames";
+import React, { useEffect, useRef, useCallback, useContext, useMemo, memo, useState, createElement, type FunctionComponent, type ReactNode } from "react";
+import { nanoid } from "nanoid";
+function useMenuHidden(menuLeft, menuWidth, cb) {
+  useEffect(() => {
+    let dir;
+    if (menuLeft < 0) {
+      dir = "left";
+    } else if (menuLeft + menuWidth > window.innerWidth) {
+      dir = "right";
+    } else {
+      dir = null;
+    }
+    cb(dir);
+  }, [menuLeft, menuWidth]);
 }
-const we = (t, n = 10) => {
-  switch (t) {
+const getStartingPosition = (pos, offset = 10) => {
+  switch (pos) {
     case "top left":
-      return `left: ${n}px;top: ${n}px;`;
+      return `left: ${offset}px;top: ${offset}px;`;
     case "top right":
-      return `right: ${n}px;top: ${n}px;`;
+      return `right: ${offset}px;top: ${offset}px;`;
     case "bottom left":
-      return `left: ${n}px;bottom: ${n}px;`;
+      return `left: ${offset}px;bottom: ${offset}px;`;
     case "bottom right":
-      return `right: ${n}px;bottom: ${n}px;`;
+      return `right: ${offset}px;bottom: ${offset}px;`;
     default:
-      return `left: ${n}px;top: ${n}px;`;
+      return `left: ${offset}px;top: ${offset}px;`;
   }
-}, xe = (t, n) => t < 0 ? 0 : t + n > window.innerWidth ? window.innerWidth - n : t, be = (t, n) => t < 0 ? 0 : t + n > window.innerHeight ? window.innerHeight - n : t, ve = (t) => {
+};
+const getLeft = (left, dimension) => {
+  if (left < 0) {
+    return 0;
+  } else if (left + dimension > window.innerWidth) {
+    return window.innerWidth - dimension;
+  } else {
+    return left;
+  }
+};
+const getTop = (top, dimension) => {
+  if (top < 0) {
+    return 0;
+  } else if (top + dimension > window.innerHeight) {
+    return window.innerHeight - dimension;
+  } else {
+    return top;
+  }
+};
+const usePosition = (settings) => {
   const {
-    onPointerDown: n,
-    onPointerUp: c,
-    onDragStart: o,
-    onDragEnd: s,
-    startPosition: u,
-    dimension: _ = 0,
-    startOffset: l,
-    onInit: y,
-    pin: d,
-    onClosed: w
-  } = t, x = R(null), v = R(!1), p = R(!1), m = R(!1), I = R({
+    onPointerDown,
+    onPointerUp,
+    onDragStart,
+    onDragEnd,
+    startPosition,
+    dimension = 0,
+    startOffset,
+    onInit,
+    pin,
+    onClosed
+  } = settings;
+  const ref = useRef(null);
+  const isClicked = useRef(false);
+  const isDragged = useRef(false);
+  const keyPressed = useRef(false);
+  const positionRef = useRef({
     left: 0,
     top: 0
-  }), N = (e) => {
-    v.current = !0;
-    const k = e.target;
-    if (e.stopPropagation(), e instanceof PointerEvent)
-      m.current = !1, k.setPointerCapture(e.pointerId);
-    else if (e instanceof KeyboardEvent && (m.current = !0, e.key === "Escape" && w(), e.key !== "Enter"))
-      return;
-    n == null || n();
-  }, r = (e) => {
-    v.current = !1;
-    const k = e.target;
-    if (e instanceof PointerEvent)
-      k.releasePointerCapture(e.pointerId);
-    else if (e instanceof KeyboardEvent && e.key !== "Enter")
-      return;
-    p.current ? (p.current = !1, s == null || s(I.current)) : c == null || c();
-  }, H = (e) => {
-    if (v.current && x.current && !m.current) {
-      const k = Math.round(_ / 2), A = e.clientX - k, D = e.clientY - k, L = {
-        left: xe(A, _),
-        top: be(D, _)
-      };
-      p.current || (p.current = !0, o == null || o(L)), I.current = L, x.current.style.cssText += `top: ${L.top}px;left: ${L.left}px;`;
+  });
+  const handlePointerDown = (ev) => {
+    isClicked.current = true;
+    const ele = ev.target;
+    ev.stopPropagation();
+    if (ev instanceof PointerEvent) {
+      keyPressed.current = false;
+      ele.setPointerCapture(ev.pointerId);
+    } else if (ev instanceof KeyboardEvent) {
+      keyPressed.current = true;
+      if (ev.key === "Escape") {
+        onClosed();
+      }
+      if (ev.key !== "Enter") {
+        return;
+      }
     }
-  }, C = M((e) => {
-    if (e) {
-      x.current = e, e.addEventListener("pointerdown", N), e.addEventListener("keydown", N), e.addEventListener("pointerup", r), e.addEventListener("keyup", r), e.style.touchAction = "none", e.style.cssText += `position: absolute;z-index: 9999;${we(
-        u,
-        l
+    onPointerDown == null ? void 0 : onPointerDown();
+  };
+  const handlePointerUp = (ev) => {
+    isClicked.current = false;
+    const ele = ev.target;
+    if (ev instanceof PointerEvent) {
+      ele.releasePointerCapture(ev.pointerId);
+    } else if (ev instanceof KeyboardEvent && ev.key !== "Enter") {
+      return;
+    }
+    if (!isDragged.current) {
+      onPointerUp == null ? void 0 : onPointerUp();
+    } else {
+      isDragged.current = false;
+      onDragEnd == null ? void 0 : onDragEnd(positionRef.current);
+    }
+  };
+  const onPointerMove = (e) => {
+    if (isClicked.current && ref.current && !keyPressed.current) {
+      const halfWidth = Math.round(dimension / 2);
+      const x = e.clientX - halfWidth;
+      const y = e.clientY - halfWidth;
+      const position = {
+        left: getLeft(x, dimension),
+        top: getTop(y, dimension)
+      };
+      if (!isDragged.current) {
+        isDragged.current = true;
+        onDragStart == null ? void 0 : onDragStart(position);
+      }
+      positionRef.current = position;
+      ref.current.style.cssText += `top: ${position.top}px;left: ${position.left}px;`;
+    }
+  };
+  const setup = useCallback((node) => {
+    if (node) {
+      ref.current = node;
+      node.addEventListener("pointerdown", handlePointerDown);
+      node.addEventListener("keydown", handlePointerDown);
+      node.addEventListener("pointerup", handlePointerUp);
+      node.addEventListener("keyup", handlePointerUp);
+      node.style.touchAction = "none";
+      node.style.cssText += `position: absolute;z-index: 9999;${getStartingPosition(
+        startPosition,
+        startOffset
       )}`;
-      const { left: k, top: A } = e.getBoundingClientRect();
-      y({
-        left: k,
-        top: A
+      const { left, top } = node.getBoundingClientRect();
+      onInit({
+        left,
+        top
       });
     }
   }, []);
-  return S(() => {
-    if (!d)
-      return document.addEventListener("pointermove", H), () => {
-        document.removeEventListener("pointermove", H);
+  useEffect(() => {
+    if (!pin) {
+      document.addEventListener("pointermove", onPointerMove);
+      return () => {
+        document.removeEventListener("pointermove", onPointerMove);
       };
-  }, []), {
-    ref: x,
-    setup: C
+    }
+  }, []);
+  return {
+    ref,
+    setup
   };
-}, ae = {
+};
+const defaultTheme = {
   menuBackgroundColor: "#FFFFFF",
   menuItemHoverColor: "#318CE7",
   menuItemHoverTextColor: "#fff",
   menuItemTextColor: "#000",
   primary: "#318CE7",
   secondary: "#FFFFFF"
-}, te = fe.createContext({});
-function Ce(t, n, c) {
-  S(() => {
-    const o = (s) => {
-      t.current && !t.current.contains(s.target) && n && c();
-    };
-    return document.addEventListener("pointerdown", o), () => {
-      document.removeEventListener("pointerdown", o);
-    };
-  }, [t, c, n]);
-}
-function ke(t, n) {
-  S(() => {
-    var o;
-    const c = (s) => {
-      s.key === "Escape" && (n == null || n());
-    };
-    return (o = t.current) == null || o.addEventListener("keyup", c), () => {
-      var s;
-      (s = t.current) == null || s.removeEventListener("keyup", c);
-    };
-  }, [t]);
-}
-function qe(t, n, c) {
-  const o = R(0);
-  S(() => {
-    var u;
-    const s = (_) => {
-      if (_.key === "ArrowDown" || _.key === "ArrowUp") {
-        let l = o.current + (_.key === "ArrowDown" ? 1 : -1);
-        l < 0 ? l = n.length - 1 : l > n.length - 1 && (l = 0), o.current = l, c(l);
+};
+const MenuContext = React.createContext({});
+function useCloseOnClick(ref, menuOpen, onClose) {
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target) && menuOpen) {
+        onClose();
       }
     };
-    return (u = t.current) == null || u.addEventListener("keyup", s), () => {
-      var _;
-      (_ = t.current) == null || _.removeEventListener("keyup", s);
+    document.addEventListener("pointerdown", handleClick);
+    return () => {
+      document.removeEventListener("pointerdown", handleClick);
     };
-  }, [t, n]);
+  }, [ref, onClose, menuOpen]);
 }
-const Me = () => /* @__PURE__ */ h(
+function useCloseOnEscape(ref, onClose) {
+  useEffect(() => {
+    var _a;
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        onClose == null ? void 0 : onClose();
+      }
+    };
+    (_a = ref.current) == null ? void 0 : _a.addEventListener("keyup", handleEscape);
+    return () => {
+      var _a2;
+      (_a2 = ref.current) == null ? void 0 : _a2.removeEventListener("keyup", handleEscape);
+    };
+  }, [ref]);
+}
+function useKeyboardNav(ref, items, onNav) {
+  const activeIndex = useRef(0);
+  useEffect(() => {
+    var _a;
+    const handleNavigation = (ev) => {
+      if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+        let nextIndex = activeIndex.current + (ev.key === "ArrowDown" ? 1 : -1);
+        if (nextIndex < 0) {
+          nextIndex = items.length - 1;
+        } else if (nextIndex > items.length - 1) {
+          nextIndex = 0;
+        }
+        activeIndex.current = nextIndex;
+        onNav(nextIndex);
+      }
+    };
+    (_a = ref.current) == null ? void 0 : _a.addEventListener("keyup", handleNavigation);
+    return () => {
+      var _a2;
+      (_a2 = ref.current) == null ? void 0 : _a2.removeEventListener("keyup", handleNavigation);
+    };
+  }, [ref, items]);
+}
+const ChevronRight = () => /* @__PURE__ */ jsx(
   "svg",
   {
     className: "feather feather-chevron-right",
@@ -150,9 +232,10 @@ const Me = () => /* @__PURE__ */ h(
     strokeWidth: 2,
     viewBox: "0 0 24 24",
     xmlns: "http://www.w3.org/2000/svg",
-    children: /* @__PURE__ */ h("path", { d: "m9 18 6-6-6-6" })
+    children: /* @__PURE__ */ jsx("path", { d: "m9 18 6-6-6-6" })
   }
-), Ee = () => /* @__PURE__ */ h(
+);
+const SvgComponent = () => /* @__PURE__ */ jsx(
   "svg",
   {
     fill: "none",
@@ -162,110 +245,148 @@ const Me = () => /* @__PURE__ */ h(
     strokeWidth: 2,
     viewBox: "0 0 24 24",
     xmlns: "http://www.w3.org/2000/svg",
-    children: /* @__PURE__ */ h("path", { d: "M18 6 6 18M6 6l12 12" })
+    children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" })
   }
-), $e = "_list_item_11btq_1", Pe = "_rtl_11btq_10", Ie = "_no_icon_11btq_13", Ne = "_icon_11btq_18", He = "_list_item_name_11btq_27", Le = "_list_item_icon_11btq_54", Te = "_child_menu_wrapper_11btq_67", Re = "_menu_flip_11btq_74", De = "_chevron_11btq_81", We = "_chevron_right_11btq_95 _chevron_11btq_81", Se = "_chevron_left_11btq_101 _chevron_11btq_81", $ = {
-  list_item: $e,
-  rtl: Pe,
-  no_icon: Ie,
-  icon: Ne,
-  list_item_name: He,
-  list_item_icon: Le,
-  child_menu_wrapper: Te,
-  menu_flip: Re,
-  chevron: De,
-  chevron_right: We,
-  chevron_left: Se
-}, _e = (t) => {
+);
+const list_item = "_list_item_11btq_1";
+const rtl = "_rtl_11btq_10";
+const no_icon = "_no_icon_11btq_13";
+const icon = "_icon_11btq_18";
+const list_item_name = "_list_item_name_11btq_27";
+const list_item_icon = "_list_item_icon_11btq_54";
+const child_menu_wrapper = "_child_menu_wrapper_11btq_67";
+const menu_flip = "_menu_flip_11btq_74";
+const chevron = "_chevron_11btq_81";
+const chevron_right = "_chevron_right_11btq_95 _chevron_11btq_81";
+const chevron_left = "_chevron_left_11btq_101 _chevron_11btq_81";
+const styles$3 = {
+  list_item,
+  rtl,
+  no_icon,
+  icon,
+  list_item_name,
+  list_item_icon,
+  child_menu_wrapper,
+  menu_flip,
+  chevron,
+  chevron_right,
+  chevron_left
+};
+const MenuItem = (props) => {
   const {
-    name: n,
-    icon: c,
-    items: o = [],
-    open: s,
-    onSelect: u,
-    index: _,
-    id: l,
-    onMouseEnter: y,
-    onMouseLeave: d,
-    onToggleSubMenu: w,
-    selected: x
-  } = t, { width: v = 250, RTL: p } = se(te), m = g(
-    () => P(
-      $.list_item,
-      c ? $.icon : $.no_icon,
-      p ? $.rtl : ""
+    name,
+    icon: icon2,
+    items = [],
+    open: open2,
+    onSelect,
+    index,
+    id,
+    onMouseEnter,
+    onMouseLeave,
+    onToggleSubMenu,
+    selected
+  } = props;
+  const { width = 250, RTL } = useContext(MenuContext);
+  const itemClass = useMemo(
+    () => classNames(
+      styles$3.list_item,
+      icon2 ? styles$3.icon : styles$3.no_icon,
+      RTL ? styles$3.rtl : ""
     ),
-    [c]
-  ), I = g(() => o.length > 0 && x, [
-    o.length,
-    x
-  ]), N = M((e) => {
-    e.pointerType === "mouse" && (y == null || y(l));
-  }, []), r = M((e) => {
-    e.pointerType === "mouse" && (d == null || d(l));
-  }, []), H = M(
-    (e) => {
-      e.stopPropagation(), e.preventDefault(), o.length <= 0 ? u == null || u(n, _, l) : w == null || w(l);
-    },
-    [u]
-  ), C = M(
-    (e) => {
-      e.key === "Enter" && (e.stopPropagation(), o.length > 0 ? w == null || w(l) : u == null || u(n, _, l));
-    },
-    [u]
+    [icon2]
   );
-  return /* @__PURE__ */ ee(
+  const canShowSubMenu = useMemo(() => items.length > 0 && selected, [
+    items.length,
+    selected
+  ]);
+  const handleMouseEnter = useCallback((ev) => {
+    if (ev.pointerType === "mouse") {
+      onMouseEnter == null ? void 0 : onMouseEnter(id);
+    }
+  }, []);
+  const handleMouseLeave = useCallback((ev) => {
+    if (ev.pointerType === "mouse") {
+      onMouseLeave == null ? void 0 : onMouseLeave(id);
+    }
+  }, []);
+  const handleClick = useCallback(
+    (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      if (items.length <= 0) {
+        onSelect == null ? void 0 : onSelect(name, index, id);
+      } else {
+        onToggleSubMenu == null ? void 0 : onToggleSubMenu(id);
+      }
+    },
+    [onSelect]
+  );
+  const handleKeyUp = useCallback(
+    (ev) => {
+      if (ev.key !== "Enter") {
+        return;
+      }
+      ev.stopPropagation();
+      if (items.length > 0) {
+        onToggleSubMenu == null ? void 0 : onToggleSubMenu(id);
+      } else {
+        onSelect == null ? void 0 : onSelect(name, index, id);
+      }
+    },
+    [onSelect]
+  );
+  return /* @__PURE__ */ jsxs(
     "li",
     {
-      className: m,
+      className: itemClass,
       "data-cy": "rc-fltmenu-list-item",
       role: "listitem",
       tabIndex: 0,
-      onKeyUp: C,
-      onPointerDown: H,
-      onPointerEnter: N,
-      onPointerLeave: r,
+      onKeyUp: handleKeyUp,
+      onPointerDown: handleClick,
+      onPointerEnter: handleMouseEnter,
+      onPointerLeave: handleMouseLeave,
       children: [
-        c && /* @__PURE__ */ h("span", { className: $.list_item_icon, role: "img", children: c }),
-        /* @__PURE__ */ h(
+        icon2 && /* @__PURE__ */ jsx("span", { className: styles$3.list_item_icon, role: "img", children: icon2 }),
+        /* @__PURE__ */ jsx(
           "span",
           {
-            "aria-label": n,
-            className: P(
-              $.list_item_name,
-              p ? $.rtl : "",
-              c ? "" : $.no_icon
+            "aria-label": name,
+            className: classNames(
+              styles$3.list_item_name,
+              RTL ? styles$3.rtl : "",
+              !icon2 ? styles$3.no_icon : ""
             ),
-            children: n
+            children: name
           }
         ),
-        o.length > 0 ? /* @__PURE__ */ h(
+        items.length > 0 ? /* @__PURE__ */ jsx(
           "span",
           {
             "aria-label": "expand menu",
-            className: p ? $.chevron_left : $.chevron_right,
+            className: !RTL ? styles$3.chevron_right : styles$3.chevron_left,
             role: "img",
-            children: /* @__PURE__ */ h(Me, {})
+            children: /* @__PURE__ */ jsx(ChevronRight, {})
           }
         ) : null,
-        /* @__PURE__ */ h(
+        /* @__PURE__ */ jsx(
           "div",
           {
-            className: P(
-              p ? $.menu_flip : "",
-              $.child_menu_wrapper
+            className: classNames(
+              RTL ? styles$3.menu_flip : "",
+              styles$3.child_menu_wrapper
             ),
             "data-cy": "rc-fltmenu-submenu",
-            style: { width: `${v}px` },
-            children: I && /* @__PURE__ */ h(
-              ie,
+            style: { width: `${width}px` },
+            children: canShowSubMenu && /* @__PURE__ */ jsx(
+              Menu,
               {
-                disableAnimation: !0,
-                disableHeader: !0,
-                isSubMenu: !0,
-                items: o,
-                open: s,
-                onSelect: u
+                disableAnimation: true,
+                disableHeader: true,
+                isSubMenu: true,
+                items,
+                open: open2,
+                onSelect
               }
             )
           }
@@ -274,214 +395,277 @@ const Me = () => /* @__PURE__ */ h(
     }
   );
 };
-_e.displayName = "MenuItem";
-const Ae = "_wrapper_pyiq3_1", Be = "_list_pyiq3_14", Fe = "_menu_open_pyiq3_52", Ke = "_no_animation_pyiq3_55", je = "_menu_close_pyiq3_60", Ue = "_hide_pyiq3_66", ze = "_close_btn_pyiq3_70", Je = "_flip_pyiq3_83", Oe = "_toolbar_pyiq3_102", q = {
-  wrapper: Ae,
-  list: Be,
-  menu_open: Fe,
-  no_animation: Ke,
+MenuItem.displayName = "MenuItem";
+const wrapper = "_wrapper_pyiq3_1";
+const list = "_list_pyiq3_14";
+const menu_open$1 = "_menu_open_pyiq3_52";
+const no_animation = "_no_animation_pyiq3_55";
+const menu_close = "_menu_close_pyiq3_60";
+const hide = "_hide_pyiq3_66";
+const close_btn = "_close_btn_pyiq3_70";
+const flip$1 = "_flip_pyiq3_83";
+const toolbar = "_toolbar_pyiq3_102";
+const styles$2 = {
+  wrapper,
+  list,
+  menu_open: menu_open$1,
+  no_animation,
   "menu-open-animation": "_menu-open-animation_pyiq3_1",
-  menu_close: je,
+  menu_close,
   "menu-close-animation": "_menu-close-animation_pyiq3_1",
-  hide: Ue,
-  close_btn: ze,
-  flip: Je,
-  toolbar: Oe
-}, ie = ue((t) => {
+  hide,
+  close_btn,
+  flip: flip$1,
+  toolbar
+};
+const Menu = memo((props) => {
   const {
-    items: n = [],
-    menuHeadPosition: c,
-    open: o,
-    onClose: s,
-    closeImmediate: u,
-    onRender: _,
-    disableHeader: l = !1,
-    disableAnimation: y = !1,
-    isSubMenu: d = !1,
-    onSelect: w
-  } = t, [x, v] = T(
-    () => n.map((i) => ({ ...i, id: ye(), selected: !1 }))
-  ), p = R(), m = R(null), [I, N] = T(0), { theme: r, iconSize: H, RTL: C, closeOnClickOutside: e } = se(te);
-  ke(p, () => {
-    j();
-  }), e && Ce(m, o, () => {
-    j();
-  }), qe(p, x, (i) => {
-    var b;
-    const a = (b = p.current) == null ? void 0 : b.querySelectorAll(
-      `li:nth-of-type(${i + 1})`
-    )[0];
-    a == null || a.focus();
+    items = [],
+    menuHeadPosition,
+    open: open2,
+    onClose,
+    closeImmediate,
+    onRender,
+    disableHeader = false,
+    disableAnimation = false,
+    isSubMenu = false,
+    onSelect
+  } = props;
+  const [_items, setItems] = useState(
+    () => items.map((item) => ({ ...item, id: nanoid(), selected: false }))
+  );
+  const listRef = useRef();
+  const outerRef = useRef(null);
+  const [height, setHeight] = useState(0);
+  const { theme, iconSize, RTL, closeOnClickOutside } = useContext(MenuContext);
+  useCloseOnEscape(listRef, () => {
+    handleClose();
   });
-  const k = R(0), A = g(
+  if (closeOnClickOutside) {
+    useCloseOnClick(outerRef, open2, () => {
+      handleClose();
+    });
+  }
+  useKeyboardNav(listRef, _items, (index) => {
+    var _a;
+    const elementToFocus = (_a = listRef.current) == null ? void 0 : _a.querySelectorAll(
+      `li:nth-of-type(${index + 1})`
+    )[0];
+    elementToFocus == null ? void 0 : elementToFocus.focus();
+  });
+  const activeIndex = useRef(0);
+  const style = useMemo(
     () => ({
-      "--menu-height": `${I}px`,
-      "--rc-fltmenu-icon-size": H,
-      "--rc-fltmenu-menu-bg-color": r == null ? void 0 : r.menuBackgroundColor,
-      "--rc-fltmenu-menu-item-hover": r == null ? void 0 : r.menuItemHoverColor,
-      "--rc-fltmenu-menu-item-hover-text": r == null ? void 0 : r.menuItemHoverTextColor,
-      "--rc-fltmenu-menu-item-text": r == null ? void 0 : r.menuItemTextColor,
-      "--rc-fltmenu-primary": r == null ? void 0 : r.primary,
-      "--rc-fltmenu-secondary": r == null ? void 0 : r.secondary
+      "--menu-height": `${height}px`,
+      "--rc-fltmenu-icon-size": iconSize,
+      "--rc-fltmenu-menu-bg-color": theme == null ? void 0 : theme.menuBackgroundColor,
+      "--rc-fltmenu-menu-item-hover": theme == null ? void 0 : theme.menuItemHoverColor,
+      "--rc-fltmenu-menu-item-hover-text": theme == null ? void 0 : theme.menuItemHoverTextColor,
+      "--rc-fltmenu-menu-item-text": theme == null ? void 0 : theme.menuItemTextColor,
+      "--rc-fltmenu-primary": theme == null ? void 0 : theme.primary,
+      "--rc-fltmenu-secondary": theme == null ? void 0 : theme.secondary
     }),
-    [I, JSON.stringify(c)]
-  ), D = g(() => o && !u && !y, [
-    o,
-    u
-  ]), L = g(() => !u && o !== null, [o]), X = g(() => D ? q.menu_open : L ? q.menu_close : d ? "" : q.hide, [D, L]), J = g(
-    () => P(
-      q.wrapper,
-      C ? q.flip : "",
-      y ? q.no_animation : "",
-      u ? q.no_animation : "",
-      d ? q.is_sub_menu : "",
-      X
+    [height, JSON.stringify(menuHeadPosition)]
+  );
+  const canOpen = useMemo(() => open2 && !closeImmediate && !disableAnimation, [
+    open2,
+    closeImmediate
+  ]);
+  const canClose = useMemo(() => !closeImmediate && open2 !== null, [open2]);
+  const openClass = useMemo(() => {
+    if (canOpen) {
+      return styles$2.menu_open;
+    } else if (canClose) {
+      return styles$2.menu_close;
+    } else if (!isSubMenu) {
+      return styles$2.hide;
+    } else {
+      return "";
+    }
+  }, [canOpen, canClose]);
+  const wrapperClass = useMemo(
+    () => classNames(
+      styles$2.wrapper,
+      RTL ? styles$2.flip : "",
+      disableAnimation ? styles$2.no_animation : "",
+      closeImmediate ? styles$2.no_animation : "",
+      isSubMenu ? styles$2.is_sub_menu : "",
+      openClass
     ),
-    [D, C, L]
-  ), W = g(
-    () => P(q.list, o ? "" : q.close),
-    [o]
-  ), ne = M(
-    (i) => {
-      i && (p.current = i, setTimeout(() => {
-        const a = i.clientHeight + 40;
-        N(a), _ == null || _(a, i.clientWidth);
-      }, 500));
+    [canOpen, RTL, canClose]
+  );
+  const listClass = useMemo(
+    () => classNames(styles$2.list, !open2 ? styles$2.close : ""),
+    [open2]
+  );
+  const onWrapperInit = useCallback(
+    (node) => {
+      if (node) {
+        listRef.current = node;
+        setTimeout(() => {
+          const wrapperHeight = node.clientHeight + 40;
+          setHeight(wrapperHeight);
+          onRender == null ? void 0 : onRender(wrapperHeight, node.clientWidth);
+        }, 500);
+      }
     },
-    [x.length, k]
-  ), j = M(
-    (i) => {
-      i == null || i.stopPropagation(), s == null || s();
+    [_items.length, activeIndex]
+  );
+  const handleClose = useCallback(
+    (ev) => {
+      ev == null ? void 0 : ev.stopPropagation();
+      onClose == null ? void 0 : onClose();
     },
-    [s]
-  ), B = M(
-    (i) => {
-      i.key === "Enter" && (s == null || s());
+    [onClose]
+  );
+  const handleCloseViaKeyboard = useCallback(
+    (ev) => {
+      if (ev.key === "Enter") {
+        onClose == null ? void 0 : onClose();
+      }
     },
-    [s]
-  ), Y = (i, a, b) => {
-    w == null || w(i, a), v(
-      (G) => G.map((Q) => ({
-        ...Q,
-        selected: Q.id === b
+    [onClose]
+  );
+  const handleSelection = (name, index, id) => {
+    onSelect == null ? void 0 : onSelect(name, index);
+    setItems(
+      (prev) => prev.map((item) => ({
+        ...item,
+        selected: item.id === id
       }))
     );
-  }, oe = (i) => {
-    v(
-      (a) => a.map((b) => ({
-        ...b,
-        selected: b.id === i
+  };
+  const handleMouseEnter = (id) => {
+    setItems(
+      (prev) => prev.map((item) => ({
+        ...item,
+        selected: item.id === id
       }))
     );
-  }, U = M((i) => {
-    v(
-      (a) => a.map((b) => ({
-        ...b,
-        selected: b.id === i ? !b.selected : !1
-      }))
-    );
-  }, []), F = M((i) => {
-    v(
-      (a) => a.map((b) => ({
-        ...b,
-        selected: b.id === i ? !1 : b.selected
+  };
+  const onToggleSubMenu = useCallback((id) => {
+    setItems(
+      (prev) => prev.map((item) => ({
+        ...item,
+        selected: item.id === id ? !item.selected : false
       }))
     );
   }, []);
-  return /* @__PURE__ */ ee("div", { className: J, ref: m, style: A, children: [
-    !l && /* @__PURE__ */ h("div", { className: P(q.toolbar, C ? q.flip : ""), children: /* @__PURE__ */ h(
+  const onCloseSubMenu = useCallback((id) => {
+    setItems(
+      (prev) => prev.map((item) => ({
+        ...item,
+        selected: item.id === id ? false : item.selected
+      }))
+    );
+  }, []);
+  return /* @__PURE__ */ jsxs("div", { className: wrapperClass, ref: outerRef, style, children: [
+    !disableHeader && /* @__PURE__ */ jsx("div", { className: classNames(styles$2.toolbar, RTL ? styles$2.flip : ""), children: /* @__PURE__ */ jsx(
       "span",
       {
         "aria-label": "Close",
-        className: P(q.close_btn, C ? q.flip : ""),
+        className: classNames(styles$2.close_btn, RTL ? styles$2.flip : ""),
         "data-cy": "rc-fltmenu-close",
         role: "button",
         tabIndex: 0,
-        onKeyUp: B,
-        onPointerDown: j,
-        children: /* @__PURE__ */ h(Ee, {})
+        onKeyUp: handleCloseViaKeyboard,
+        onPointerDown: handleClose,
+        children: /* @__PURE__ */ jsx(SvgComponent, {})
       }
     ) }),
-    /* @__PURE__ */ h("ul", { className: W, ref: ne, children: x.map((i, a) => /* @__PURE__ */ he(
-      _e,
+    /* @__PURE__ */ jsx("ul", { className: listClass, ref: onWrapperInit, children: _items.map((item, index) => /* @__PURE__ */ createElement(
+      MenuItem,
       {
-        ...i,
-        icon: i.icon,
-        index: a,
-        items: i.items,
-        key: i.id,
-        open: o,
-        onCloseSubMenu: F,
-        onMouseEnter: oe,
-        onMouseLeave: F,
-        onSelect: Y,
-        onToggleSubMenu: U
+        ...item,
+        icon: item.icon,
+        index,
+        items: item.items,
+        key: item.id,
+        open: open2,
+        onCloseSubMenu,
+        onMouseEnter: handleMouseEnter,
+        onMouseLeave: onCloseSubMenu,
+        onSelect: handleSelection,
+        onToggleSubMenu
       }
     )) })
   ] });
 });
-ie.displayName = "Menu";
-const Xe = "_menu_container_1v4aq_1", Ye = "_open_1v4aq_9", Ge = "_close_1v4aq_12", Qe = "_menu_arrow_1v4aq_16", Ze = "_menu_open_1v4aq_30", Ve = "_flip_1v4aq_30", K = {
-  menu_container: Xe,
-  open: Ye,
-  close: Ge,
-  menu_arrow: Qe,
-  menu_open: Ze,
-  flip: Ve
-}, de = ue(
+Menu.displayName = "Menu";
+const menu_container = "_menu_container_1v4aq_1";
+const open = "_open_1v4aq_9";
+const close = "_close_1v4aq_12";
+const menu_arrow = "_menu_arrow_1v4aq_16";
+const menu_open = "_menu_open_1v4aq_30";
+const flip = "_flip_1v4aq_30";
+const styles$1 = {
+  menu_container,
+  open,
+  close,
+  menu_arrow,
+  menu_open,
+  flip
+};
+const MenuContainer = memo(
   ({
-    closeImmediate: t,
-    disableHeader: n,
-    headPosition: c,
-    menuPosition: o,
-    onClose: s,
-    onMenuRender: u,
-    onSelect: _,
-    open: l,
-    shouldFlipVertical: y
+    closeImmediate,
+    disableHeader,
+    headPosition,
+    menuPosition,
+    onClose,
+    onMenuRender,
+    onSelect,
+    open: open2,
+    shouldFlipVertical
   }) => {
-    const { left: d, top: w, bottom: x } = o, { items: v, width: p, theme: m } = se(te), I = g(() => ({
-      "--rc-fltmenu-menu-bg-color": m == null ? void 0 : m.menuBackgroundColor,
-      "--rc-fltmenu-width": `${p}px`,
-      [y ? "bottom" : "top"]: `${y ? x : w}px`,
-      left: `${d}px`
-    }), [
-      y,
-      p,
-      d,
-      w,
-      x,
-      m == null ? void 0 : m.menuBackgroundColor
-    ]), N = g(
-      () => P(
-        K.menu_arrow,
-        l ? K.menu_open : K.menu_close,
-        y ? K.flip : ""
+    const { left, top, bottom } = menuPosition;
+    const { items, width, theme } = useContext(MenuContext);
+    const menuContainerStyle = useMemo(() => {
+      return {
+        "--rc-fltmenu-menu-bg-color": theme == null ? void 0 : theme.menuBackgroundColor,
+        "--rc-fltmenu-width": `${width}px`,
+        [shouldFlipVertical ? "bottom" : "top"]: `${shouldFlipVertical ? bottom : top}px`,
+        left: `${left}px`
+      };
+    }, [
+      shouldFlipVertical,
+      width,
+      left,
+      top,
+      bottom,
+      theme == null ? void 0 : theme.menuBackgroundColor
+    ]);
+    const arrowClass = useMemo(
+      () => classNames(
+        styles$1.menu_arrow,
+        open2 ? styles$1.menu_open : styles$1.menu_close,
+        shouldFlipVertical ? styles$1.flip : ""
       ),
-      [l, y]
-    ), r = g(
-      () => P(K.menu_container, l ? K.open : K.close),
-      [l]
+      [open2, shouldFlipVertical]
     );
-    return /* @__PURE__ */ ee(
+    const menuContainerClass = useMemo(
+      () => classNames(styles$1.menu_container, open2 ? styles$1.open : styles$1.close),
+      [open2]
+    );
+    return /* @__PURE__ */ jsxs(
       "div",
       {
-        className: r,
+        className: menuContainerClass,
         "data-cy": "rc-fltmenu-container",
-        style: I,
+        style: menuContainerStyle,
         children: [
-          /* @__PURE__ */ h("span", { className: N }),
-          /* @__PURE__ */ h(
-            ie,
+          /* @__PURE__ */ jsx("span", { className: arrowClass }),
+          /* @__PURE__ */ jsx(
+            Menu,
             {
-              closeImmediate: t,
-              disableHeader: n,
-              items: v,
-              menuHeadPosition: c,
-              open: l,
-              onClose: s,
-              onRender: u,
-              onSelect: _
+              closeImmediate,
+              disableHeader,
+              items,
+              menuHeadPosition: headPosition,
+              open: open2,
+              onClose,
+              onRender: onMenuRender,
+              onSelect
             }
           )
         ]
@@ -489,183 +673,247 @@ const Xe = "_menu_container_1v4aq_1", Ye = "_open_1v4aq_9", Ge = "_close_1v4aq_1
     );
   }
 );
-de.displayName = "MenuContainer";
-const et = "_menu_head_tb4t7_1", tt = "_is_dragged_tb4t7_12", nt = "_circle_tb4t7_15", ot = "_square_tb4t7_18", rt = "_pressed_tb4t7_43", st = "_released_tb4t7_48", it = "_icon_container_tb4t7_53", z = {
-  menu_head: et,
-  is_dragged: tt,
-  circle: nt,
-  square: ot,
-  pressed: rt,
+MenuContainer.displayName = "MenuContainer";
+const menu_head = "_menu_head_tb4t7_1";
+const is_dragged = "_is_dragged_tb4t7_12";
+const circle = "_circle_tb4t7_15";
+const square = "_square_tb4t7_18";
+const pressed = "_pressed_tb4t7_43";
+const released = "_released_tb4t7_48";
+const icon_container = "_icon_container_tb4t7_53";
+const styles = {
+  menu_head,
+  is_dragged,
+  circle,
+  square,
+  pressed,
   "pressed-animation": "_pressed-animation_tb4t7_1",
-  released: st,
+  released,
   "released-animation": "_released-animation_tb4t7_1",
-  icon_container: it
-}, _t: FunctionComponent<MenuHeadProps> = ({
-  dimension: t = 30,
-  children: n,
-  shape: c = "circle",
-  items: o = [],
-  startPosition: s = "top left",
-  theme: u = ae,
-  disableHeader: _ = !1,
-  width: l = 250,
-  onSelect: y,
-  startOffset: d = 10,
-  closeOnClickOutside: w = !0,
-  autoFlipMenu: x = !0,
-  bringMenuToFocus: v = !0,
-  iconSize: p = "1rem",
-  pin: m,
-  RTL: I = !1
+  icon_container
+};
+const MenuHead : FunctionComponent<MenuHeadProps> = ({
+  dimension = 30,
+  children,
+  shape = "circle",
+  items = [],
+  startPosition = "top left",
+  theme = defaultTheme,
+  disableHeader = false,
+  width = 250,
+  onSelect,
+  startOffset = 10,
+  closeOnClickOutside = true,
+  autoFlipMenu = true,
+  bringMenuToFocus = true,
+  iconSize = "1rem",
+  pin,
+  RTL = false
 }) => {
-  const [N, r] = T(!1), [H, C] = T(null), [e, k] = T({ x: 0, y: 0 }), [A, D] = T(!1), [L, X] = T(!1), J = g(() => ({ ...ae, ...u }), []), [W, ne] = T({ height: 0, width: 0 }), [j, B] = T({ bottom: 0, left: 0, top: 0 }), [Y, oe] = T(), U = g(() => Math.round(t / 2), [t]), F = R(!0), { setup: i, ref: a } = ve({
-    dimension: t,
+  const [pressedState, setPressedState] = useState(false);
+  const [openMenu, setMenuOpen] = useState(null);
+  const [headPosition, setHeadPosition] = useState({ x: 0, y: 0 });
+  const [closeMenuImmediate, setCloseMenuImmediate] = useState(false);
+  const [isDragged, setIsDragged] = useState(false);
+  const finalTheme = useMemo(() => ({ ...defaultTheme, ...theme }), []);
+  const [menuDimension, setMenuDimension] = useState({ height: 0, width: 0 });
+  const [menuPosition, setMenuPosition] = useState({ bottom: 0, left: 0, top: 0 });
+  const [menuHiddenTowards, setMenuHiddenTowards] = useState();
+  const headHalfWidth = useMemo(() => Math.round(dimension / 2), [dimension]);
+  const isFirstRender = useRef(true);
+  const { setup, ref } = usePosition({
+    dimension,
     onClosed: () => {
-      C(!1), r(!1);
+      setMenuOpen(false);
+      setPressedState(false);
     },
-    onDragEnd: ({ left: f, top: E }) => {
-      k({
-        x: f || 0,
-        y: (E || 0) + t + 10
-      }), C(!1), r(!1), X(!1);
+    onDragEnd: ({ left, top }) => {
+      setHeadPosition({
+        x: left || 0,
+        y: (top || 0) + dimension + 10
+      });
+      setMenuOpen(false);
+      setPressedState(false);
+      setIsDragged(false);
     },
-    onDragStart: ({ left: f, top: E }) => {
-      k({
-        x: f || 0,
-        y: (E || 0) + t + 10
-      }), D(!0), C(!1), X(!0);
+    onDragStart: ({ left, top }) => {
+      setHeadPosition({
+        x: left || 0,
+        y: (top || 0) + dimension + 10
+      });
+      setCloseMenuImmediate(true);
+      setMenuOpen(false);
+      setIsDragged(true);
     },
-    onInit: ({ left: f, top: E }) => {
-      k({
-        x: f || 0,
-        y: (E || 0) + t + 10
+    onInit: ({ left, top }) => {
+      setHeadPosition({
+        x: left || 0,
+        y: (top || 0) + dimension + 10
       });
     },
     onPointerDown: () => {
-      r(!0), D(!1);
+      setPressedState(true);
+      setCloseMenuImmediate(false);
     },
-    onPointerUp: M(() => {
-      r(!1), C((f) => !f);
+    onPointerUp: useCallback(() => {
+      setPressedState(false);
+      setMenuOpen((prev) => !prev);
     }, []),
-    pin: m,
-    startOffset: d,
-    startPosition: s
+    pin,
+    startOffset,
+    startPosition
   });
-  ge(j.left, W.width, (f) => {
-    oe(f);
+  useMenuHidden(menuPosition.left, menuDimension.width, (dir) => {
+    setMenuHiddenTowards(dir);
   });
-  const b = g(
+  const style = useMemo(
     () => ({
-      "--dimension": `${t}px`,
-      "--rc-fltmenu-primary": J.primary,
-      "--rc-fltmenu-width": `${l}px`
+      "--dimension": `${dimension}px`,
+      "--rc-fltmenu-primary": finalTheme.primary,
+      "--rc-fltmenu-width": `${width}px`
     }),
-    [J.primary]
-  ), G = g(() => F.current ? "" : N ? z.pressed : z.released, [N]), Q = g(() => P(
-    z.menu_head,
-    G,
-    L ? z.is_dragged : "",
-    {
-      [z[c]]: !0
+    [finalTheme.primary]
+  );
+  const pressedClass = useMemo(() => {
+    if (isFirstRender.current) {
+      return "";
     }
-  ), [G, L]), ce = M(() => {
-    var f;
-    C(!1), D(!1), (f = a == null ? void 0 : a.current) == null || f.focus();
-  }, []), Z = g(() => x && e.y + t + W.height > window.innerHeight, [
-    e.x,
-    e.y,
-    JSON.stringify(W),
-    H,
-    x
-  ]), pe = M(
-    (f, E) => ne({ height: f, width: E }),
+    return pressedState ? styles.pressed : styles.released;
+  }, [pressedState]);
+  const menuHeadClass = useMemo(() => {
+    return classNames(
+      styles.menu_head,
+      pressedClass,
+      isDragged ? styles.is_dragged : "",
+      {
+        [styles[shape]]: true
+      }
+    );
+  }, [pressedClass, isDragged]);
+  const handleMenuClose = useCallback(() => {
+    var _a;
+    setMenuOpen(false);
+    setCloseMenuImmediate(false);
+    (_a = ref == null ? void 0 : ref.current) == null ? void 0 : _a.focus();
+  }, []);
+  const shouldFlipVertical = useMemo(() => {
+    return autoFlipMenu && headPosition.y + dimension + menuDimension.height > window.innerHeight;
+  }, [
+    headPosition.x,
+    headPosition.y,
+    JSON.stringify(menuDimension),
+    openMenu,
+    autoFlipMenu
+  ]);
+  const onMenuRender = useCallback(
+    (menuHeight, menuWidth) => setMenuDimension({ height: menuHeight, width: menuWidth }),
     []
   );
-  S(() => {
-    B({
+  useEffect(() => {
+    setMenuPosition({
       left: Math.round(
-        e.x - (Math.round(W.width / 2) - U)
+        headPosition.x - (Math.round(menuDimension.width / 2) - headHalfWidth)
       ),
-      [Z ? "bottom" : "top"]: Z ? Math.abs(window.innerHeight - e.y) + t + 20 : e.y + 10
+      [shouldFlipVertical ? "bottom" : "top"]: !shouldFlipVertical ? headPosition.y + 10 : Math.abs(window.innerHeight - headPosition.y) + dimension + 20
     });
   }, [
-    Z,
-    e.x,
-    e.y,
-    W.width,
-    U
+    shouldFlipVertical,
+    headPosition.x,
+    headPosition.y,
+    menuDimension.width,
+    headHalfWidth
   ]);
-  const le = g(
-    () => !!(!F.current && v && (a != null && a.current)),
-    [H, v]
+  const shouldAdjustMenuPosition = useMemo(
+    () => !!(!isFirstRender.current && bringMenuToFocus && (ref == null ? void 0 : ref.current)),
+    [openMenu, bringMenuToFocus]
   );
-  S(() => {
-    if (!le)
+  useEffect(() => {
+    if (!shouldAdjustMenuPosition) {
       return;
-    const f = s.split(" ")[1], { width: E } = W, { innerWidth: O } = window, V = a.current;
-    Y === "left" ? (B({
-      left: d
-    }), V.style.cssText += `left: ${Math.round(E / 2) - U + d}px;`) : Y === "right" ? (B({
-      left: O - E - d
-    }), V.style.cssText += `left: ${Math.round(O - E / 2) - U - 10}px;`) : f === "left" && e.x <= d && m ? (V.style.cssText += `left: ${d}px;`, B((re) => ({
-      ...re,
-      left: -E
-    }))) : f === "right" && e.x >= O - t - d && m && (V.style.cssText += `left: ${O - t - d}px;`, B((re) => ({
-      ...re,
-      left: O
-    })));
-  }, [H, e.x, le]), S(() => {
-    F.current && (F.current = !1);
+    }
+    const alignedTo = startPosition.split(" ")[1];
+    const { width: menuWidth } = menuDimension;
+    const { innerWidth } = window;
+    const headRef = ref.current;
+    if (menuHiddenTowards === "left") {
+      setMenuPosition({
+        left: startOffset
+      });
+      headRef.style.cssText += `left: ${Math.round(menuWidth / 2) - headHalfWidth + startOffset}px;`;
+    } else if (menuHiddenTowards === "right") {
+      setMenuPosition({
+        left: innerWidth - menuWidth - startOffset
+      });
+      headRef.style.cssText += `left: ${Math.round(innerWidth - menuWidth / 2) - headHalfWidth - 10}px;`;
+    } else if (alignedTo === "left" && headPosition.x <= startOffset && pin) {
+      headRef.style.cssText += `left: ${startOffset}px;`;
+      setMenuPosition((prev) => ({
+        ...prev,
+        left: -menuWidth
+      }));
+    } else if (alignedTo === "right" && headPosition.x >= innerWidth - dimension - startOffset && pin) {
+      headRef.style.cssText += `left: ${innerWidth - dimension - startOffset}px;`;
+      setMenuPosition((prev) => ({
+        ...prev,
+        left: innerWidth
+      }));
+    }
+  }, [openMenu, headPosition.x, shouldAdjustMenuPosition]);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+    }
   }, []);
-  const me = M((f) => {
-    y == null || y(f), ce();
+  const handleSelection = useCallback((path) => {
+    onSelect == null ? void 0 : onSelect(path);
+    handleMenuClose();
   }, []);
-  return /* @__PURE__ */ ee(
-    te.Provider,
+  return /* @__PURE__ */ jsxs(
+    MenuContext.Provider,
     {
       value: {
-        RTL: I,
-        closeOnClickOutside: w,
-        dimension: t,
-        disableHeader: _,
-        iconSize: p,
-        items: o,
-        shape: c,
-        theme: J,
-        width: l
+        RTL,
+        closeOnClickOutside,
+        dimension,
+        disableHeader,
+        iconSize,
+        items,
+        shape,
+        theme: finalTheme,
+        width
       },
       children: [
-        /* @__PURE__ */ h(
+        /* @__PURE__ */ jsx(
           "div",
           {
-            className: P(Q),
+            className: classNames(menuHeadClass),
             "data-cy": "rc-fltmenu-head",
-            ref: i,
+            ref: setup,
             role: "button",
-            style: b,
+            style,
             tabIndex: 0,
-            children: /* @__PURE__ */ h(
+            children: /* @__PURE__ */ jsx(
               "span",
               {
-                className: P(z.icon_container),
+                className: classNames(styles.icon_container),
                 "data-cy": "rc-fltmenu-icon",
-                children: n
+                children
               }
             )
           }
         ),
-        /* @__PURE__ */ h(
-          de,
+        /* @__PURE__ */ jsx(
+          MenuContainer,
           {
-            closeImmediate: A,
-            disableHeader: _,
-            headPosition: e,
-            menuPosition: j,
-            open: H,
-            shouldFlipVertical: Z,
-            onClose: ce,
-            onMenuRender: pe,
-            onSelect: me
+            closeImmediate: closeMenuImmediate,
+            disableHeader,
+            headPosition,
+            menuPosition,
+            open: openMenu,
+            shouldFlipVertical,
+            onClose: handleMenuClose,
+            onMenuRender,
+            onSelect: handleSelection
           }
         )
       ]
@@ -673,7 +921,7 @@ const et = "_menu_head_tb4t7_1", tt = "_is_dragged_tb4t7_12", nt = "_circle_tb4t
   );
 };
 export {
-  _t as Menu
+  MenuHead as Menu
 };
 
 export interface Theme {
