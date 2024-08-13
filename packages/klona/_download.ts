@@ -2,7 +2,7 @@
  * jsr has no built-in way to get css file, so I make this to download css file to local machine.
  * 
  * ```sh
- * deno run -A jsr:@cvnc/_download.ts react-float-menu.css static/style.css
+ * deno run -A jsr:@cvnc/_download react-float-menu.css static/style.css
  * ```
  * 
  * @module

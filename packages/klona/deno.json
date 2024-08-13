@@ -1,7 +1,8 @@
 {
   "name": "@cvnc/klona",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "exports": {
+    "./_download": "./_download.ts",
     "./deepcopy": "./deepcopy.ts",
     "./react-float-menu": "./react-float-menu.ts"
   },
